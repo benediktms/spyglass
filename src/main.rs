@@ -18,7 +18,7 @@ fn main() -> Result<(), anyhow::Error> {
         return Err(Error::CliUsage.into());
     }
 
-    let target = args[1].as_str();
+    let target = args[1].as_str().trim();
 
     let http_timeout = Duration::from_secs(5);
     let http_client = Client::builder()
@@ -32,13 +32,13 @@ fn main() -> Result<(), anyhow::Error> {
         .map(ports::scan_ports)
         .collect();
 
+    println!("Finished scan");
+
     for subdomain in scan_result {
         println!("{}:", &subdomain.domain);
         for port in &subdomain.open_ports {
             println!("    {}", port.port);
         }
-
-        println!();
     }
 
     Ok(())

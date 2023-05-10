@@ -14,5 +14,5 @@ pub struct Port {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct CrtShEntry {
-    pub name_value: String,
+    pub dns_names: Vec<String>,
 }

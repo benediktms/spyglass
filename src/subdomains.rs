@@ -10,24 +10,17 @@ use trust_dns_resolver::{
 };
 
 pub fn enumerate(http_client: &Client, target: &str) -> Result<Vec<Subdomain>, Error> {
-    let entries: Vec<CrtShEntry> = http_client
-        .get(&format!("https://crt.sh/?q=%25.{}&output=json", target))
-        .send()?
-        .json()?;
+    let url = format!("https://api.certspotter.com/v1/issuances?domain={}&include_subdomains=true&expand=dns_names&expand=issuer&expand=revocation&expand=problem_reporting&expand=cert_der", target);
+    println!("Attempting scan on {}", target);
+    let entries: Vec<CrtShEntry> = http_client.get(url).send()?.json()?;
 
-    // clean and dedup results
     let mut subdomains: HashSet<String> = entries
         .into_iter()
-        .flat_map(|entry| {
-            entry
-                .name_value
-                .split('\n')
-                .map(|subdomain| subdomain.trim().to_string())
-                .collect::<Vec<String>>()
-        })
+        .flat_map(|entry| entry.dns_names)
         .filter(|subdomain: &String| subdomain != target)
         .filter(|subdomain: &String| !subdomain.contains('*'))
         .collect();
+
     subdomains.insert(target.to_string());
 
     let subdomains: Vec<Subdomain> = subdomains
