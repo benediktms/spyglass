@@ -3,6 +3,10 @@ use std::{env, time::Duration};
 use anyhow::Ok;
 use errors::Error;
 use model::Subdomain;
+use rayon::{
+    prelude::{IntoParallelIterator, ParallelIterator},
+    ThreadPoolBuilder,
+};
 use reqwest::{blocking::Client, redirect};
 
 mod common_ports;
@@ -27,20 +31,25 @@ fn main() -> Result<(), anyhow::Error> {
         .timeout(http_timeout)
         .build()?;
 
-    let scan_result: Vec<Subdomain> = subdomains::enumerate(&http_client, target)
-        .unwrap()
-        .into_iter()
-        .map(ports::scan_ports)
-        .collect();
+    ThreadPoolBuilder::new()
+        .num_threads(256)
+        .build()?
+        .install(|| {
+            let scan_result: Vec<Subdomain> = subdomains::enumerate(&http_client, target)
+                .unwrap()
+                .into_par_iter()
+                .map(ports::scan_ports)
+                .collect();
+
+            for subdomain in scan_result {
+                println!("{}:", &subdomain.domain);
+                for port in &subdomain.open_ports {
+                    println!("    {}", port.port);
+                }
+            }
+        });
 
     println!("Finished scan");
-
-    for subdomain in scan_result {
-        println!("{}:", &subdomain.domain);
-        for port in &subdomain.open_ports {
-            println!("    {}", port.port);
-        }
-    }
 
     Ok(())
 }

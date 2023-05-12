@@ -1,3 +1,5 @@
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+
 use crate::common_ports::MOST_COMMON_PORTS_100;
 use crate::model::{Port, Subdomain};
 
@@ -5,6 +7,8 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::{net::TcpStream, time::Duration};
 
 pub fn scan_ports(mut subdomain: Subdomain) -> Subdomain {
+    println!("Scanning ports for {}", subdomain.domain);
+
     let socket_addresses: Vec<SocketAddr> = format!("{}:1024", subdomain.domain)
         .to_socket_addrs()
         .expect("port scanner: Creating socket address")
@@ -15,7 +19,7 @@ pub fn scan_ports(mut subdomain: Subdomain) -> Subdomain {
     }
 
     subdomain.open_ports = MOST_COMMON_PORTS_100
-        .into_iter()
+        .into_par_iter()
         .map(|port| scan_port(socket_addresses[0], *port))
         .filter(|port| port.is_open) // filter closed ports
         .collect();
