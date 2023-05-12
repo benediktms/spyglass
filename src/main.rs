@@ -10,6 +10,7 @@ mod errors;
 mod model;
 mod ports;
 mod subdomains;
+mod url;
 
 fn main() -> Result<(), anyhow::Error> {
     let args: Vec<String> = env::args().collect();
